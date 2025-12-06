@@ -1,0 +1,263 @@
+erDiagram
+    ROLES ||--o{ USERS : "has"
+    USERS ||--o{ PROJECTS : "creates"
+    USERS ||--o{ CHOREOGRAPHIES : "designs"
+    USERS ||--o{ MAINTENANCE_LOGS : "performs"
+    USERS ||--o{ FLIGHTS : "pilots"
+    USERS ||--o{ CERTIFICATIONS : "has"
+    
+    BATTERIES ||--o{ DRONES : "powers"
+    BATTERIES ||--o{ FLIGHTS : "used_in"
+    
+    DRONES ||--o{ LED_MODULES : "has"
+    DRONES ||--o{ MAINTENANCE_LOGS : "requires"
+    DRONES ||--o{ FLIGHT_PATHS : "follows"
+    DRONES ||--o{ LIGHTING_SEQUENCES : "uses"
+    DRONES ||--o{ FLIGHTS : "flies_in"
+    DRONES ||--o{ TELEMETRY : "generates"
+    DRONES ||--o{ SAFETY_ALERTS : "triggers"
+    
+    CLIENTS ||--o{ PROJECTS : "has"
+    PROJECTS ||--o{ SHOWS : "contains"
+    
+    SHOWS ||--o{ CHOREOGRAPHIES : "has"
+    SHOWS ||--o{ FLIGHTS : "includes"
+    SHOWS ||--o{ GEOFENCES : "has"
+    
+    CHOREOGRAPHIES ||--o{ FLIGHT_PATHS : "defines"
+    CHOREOGRAPHIES ||--o{ FORMATIONS : "defines"
+    CHOREOGRAPHIES ||--o{ LIGHTING_SEQUENCES : "defines"
+    
+    FLIGHTS ||--o{ TELEMETRY : "generates"
+    FLIGHTS ||--o{ SAFETY_ALERTS : "triggers"
+
+    ROLES {
+        int role_id PK
+        string role_name UK
+        jsonb permissions_json
+        text description
+        timestamp created_at
+    }
+    
+    USERS {
+        int user_id PK
+        string username UK
+        string email UK
+        string password_hash
+        string full_name
+        string phone
+        int role_id FK
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    BATTERIES {
+        int battery_id PK
+        string serial_number UK
+        string model
+        int capacity_mah
+        decimal voltage
+        int charge_cycles
+        int max_charge_cycles
+        enum health_status
+        date purchase_date
+        timestamp last_charged_at
+        timestamp created_at
+    }
+    
+    DRONES {
+        int drone_id PK
+        string serial_number UK
+        string model
+        string manufacturer
+        date purchase_date
+        enum status
+        decimal current_flight_hours
+        decimal max_flight_hours
+        int battery_id FK
+        date last_maintenance_date
+        date next_maintenance_date
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    LED_MODULES {
+        int led_module_id PK
+        int drone_id FK
+        string model
+        boolean rgb_capability
+        int brightness_level
+        enum status
+        timestamp installed_at
+    }
+    
+    MAINTENANCE_LOGS {
+        int maintenance_id PK
+        int drone_id FK
+        enum maintenance_type
+        int performed_by FK
+        date maintenance_date
+        decimal cost
+        text description
+        date next_maintenance_date
+        timestamp created_at
+    }
+    
+    CLIENTS {
+        int client_id PK
+        string company_name
+        string contact_person
+        string email
+        string phone
+        text address
+        text notes
+        timestamp created_at
+    }
+    
+    PROJECTS {
+        int project_id PK
+        string project_name
+        int client_id FK
+        int created_by FK
+        enum status
+        date start_date
+        date end_date
+        decimal budget
+        text location
+        text description
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    SHOWS {
+        int show_id PK
+        int project_id FK
+        string show_name
+        date show_date
+        time show_time
+        text venue
+        string weather_conditions
+        int crowd_size
+        int duration_seconds
+        text music_file_path
+        enum status
+        text notes
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    CHOREOGRAPHIES {
+        int choreography_id PK
+        int show_id FK
+        string choreography_name
+        int designer_id FK
+        text design_file_path
+        int duration_seconds
+        int drone_count
+        int scene_order
+        enum status
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    FLIGHT_PATHS {
+        int path_id PK
+        int choreography_id FK
+        int drone_id FK
+        jsonb path_data_json
+        jsonb start_position
+        jsonb end_position
+        decimal max_altitude
+        enum collision_check_status
+        timestamp created_at
+    }
+    
+    FORMATIONS {
+        int formation_id PK
+        int choreography_id FK
+        string formation_name
+        enum formation_type
+        decimal timestamp_start
+        decimal timestamp_end
+        jsonb coordinates_json
+        int drone_count
+        timestamp created_at
+    }
+    
+    LIGHTING_SEQUENCES {
+        int sequence_id PK
+        int choreography_id FK
+        int drone_id FK
+        decimal timestamp_start
+        decimal timestamp_end
+        jsonb rgb_values_json
+        int brightness_level
+        string effect_type
+        timestamp created_at
+    }
+    
+    FLIGHTS {
+        int flight_id PK
+        int show_id FK
+        int drone_id FK
+        int pilot_id FK
+        date flight_date
+        timestamp takeoff_time
+        timestamp landing_time
+        decimal flight_duration_minutes
+        int battery_used FK
+        enum status
+        text notes
+        timestamp created_at
+    }
+    
+    TELEMETRY {
+        int telemetry_id PK
+        int drone_id FK
+        int flight_id FK
+        timestamp timestamp
+        decimal latitude
+        decimal longitude
+        decimal altitude
+        int battery_level
+        int gps_signal_strength
+        enum connection_status
+        decimal speed
+        decimal heading
+        timestamp created_at
+    }
+    
+    SAFETY_ALERTS {
+        int alert_id PK
+        int flight_id FK
+        int drone_id FK
+        enum alert_type
+        timestamp alert_time
+        enum severity
+        boolean resolved
+        timestamp resolution_time
+        text notes
+        timestamp created_at
+    }
+    
+    CERTIFICATIONS {
+        int certification_id PK
+        int user_id FK
+        enum certification_type
+        date issue_date
+        date expiration_date
+        text document_path
+        enum status
+        timestamp created_at
+    }
+    
+    GEOFENCES {
+        int geofence_id PK
+        int show_id FK
+        jsonb coordinates_json
+        decimal max_altitude
+        decimal crowd_line_distance
+        timestamp created_at
+    }
