@@ -1,352 +1,123 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  Box,
-  Typography,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  MenuItem,
-  Grid,
-  Card,
-  CardContent,
-} from '@mui/material';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Folder as ProjectIcon,
-} from '@mui/icons-material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 import { fetchProjects, createProject, updateProject, deleteProject } from '../store/slices/projectSlice';
 import { fetchClients } from '../store/slices/clientSlice';
+import GlassCard from '../components/GlassCard';
+import StatusBadge from '../components/StatusBadge';
+import AnimCounter from '../components/AnimCounter';
+
+const emptyForm = { projectName: '', clientId: '', status: 'planning', startDate: '', endDate: '', budget: '', location: '', description: '' };
 
 function ProjectsPage() {
   const dispatch = useDispatch();
-  const { items: projects, loading } = useSelector((state) => state.projects);
+  const { items: projects } = useSelector((state) => state.projects);
   const { items: clients } = useSelector((state) => state.clients);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [formData, setFormData] = useState({
-    projectName: '',
-    clientId: '',
-    status: 'planning',
-    startDate: '',
-    endDate: '',
-    budget: '',
-    location: '',
-    description: '',
-  });
+  const [formData, setFormData] = useState(emptyForm);
 
-  useEffect(() => {
-    dispatch(fetchProjects());
-    dispatch(fetchClients());
-  }, [dispatch]);
+  useEffect(() => { dispatch(fetchProjects()); dispatch(fetchClients()); }, [dispatch]);
 
   const handleOpen = (project = null) => {
-    if (project) {
-      setEditing(project);
-      setFormData({
-        projectName: project.projectName || '',
-        clientId: project.clientId || '',
-        status: project.status || 'planning',
-        startDate: project.startDate || '',
-        endDate: project.endDate || '',
-        budget: project.budget || '',
-        location: project.location || '',
-        description: project.description || '',
-      });
-    } else {
-      setEditing(null);
-      setFormData({
-        projectName: '',
-        clientId: '',
-        status: 'planning',
-        startDate: '',
-        endDate: '',
-        budget: '',
-        location: '',
-        description: '',
-      });
-    }
+    setEditing(project);
+    setFormData(project ? {
+      projectName: project.projectName || '', clientId: project.clientId || '',
+      status: project.status || 'planning', startDate: project.startDate || '',
+      endDate: project.endDate || '', budget: project.budget || '',
+      location: project.location || '', description: project.description || '',
+    } : { ...emptyForm });
     setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setEditing(null);
   };
 
   const handleSubmit = async () => {
     try {
-      const submitData = {
-        ...formData,
-        budget: formData.budget ? parseFloat(formData.budget) : null,
-      };
-      
-      if (editing) {
-        await dispatch(updateProject({ id: editing.projectId, data: submitData })).unwrap();
-      } else {
-        await dispatch(createProject(submitData)).unwrap();
-      }
-      handleClose();
-      dispatch(fetchProjects());
-    } catch (error) {
-      console.error('Error saving project:', error);
-    }
+      const data = { ...formData, budget: formData.budget ? parseFloat(formData.budget) : null };
+      if (editing) await dispatch(updateProject({ id: editing.projectId, data })).unwrap();
+      else await dispatch(createProject(data)).unwrap();
+      setOpen(false); dispatch(fetchProjects());
+    } catch (e) { console.error(e); }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
-      try {
-        await dispatch(deleteProject(id)).unwrap();
-        dispatch(fetchProjects());
-      } catch (error) {
-        console.error('Error deleting project:', error);
-      }
+    if (window.confirm('Delete this project?')) {
+      try { await dispatch(deleteProject(id)).unwrap(); dispatch(fetchProjects()); }
+      catch (e) { console.error(e); }
     }
   };
 
-  const getStatusColor = (status) => {
-    const statusStyles = {
-      planning: {
-        backgroundColor: '#e0e7ff',
-        color: '#3730a3',
-        border: '1px solid #a5b4fc',
-        fontWeight: 600,
-      },
-      design: {
-        backgroundColor: '#fce7f3',
-        color: '#9f1239',
-        border: '1px solid #f9a8d4',
-        fontWeight: 600,
-      },
-      testing: {
-        backgroundColor: '#fef3c7',
-        color: '#92400e',
-        border: '1px solid #fcd34d',
-        fontWeight: 600,
-      },
-      approved: {
-        backgroundColor: '#d1fae5',
-        color: '#065f46',
-        border: '1px solid #6ee7b7',
-        fontWeight: 600,
-      },
-      completed: {
-        backgroundColor: '#dbeafe',
-        color: '#1e40af',
-        border: '1px solid #93c5fd',
-        fontWeight: 600,
-      },
-      cancelled: {
-        backgroundColor: '#fee2e2',
-        color: '#991b1b',
-        border: '1px solid #fca5a5',
-        fontWeight: 600,
-      },
-    };
-    return statusStyles[status] || {
-      backgroundColor: '#f3f4f6',
-      color: '#6b7280',
-      border: '1px solid #e5e7eb',
-      fontWeight: 600,
-    };
-  };
-
-  const stats = {
-    total: projects.length,
-    active: projects.filter(p => ['planning', 'design', 'testing', 'approved'].includes(p.status)).length,
-    completed: projects.filter(p => p.status === 'completed').length,
-  };
+  const stats = [
+    { label: 'Total', value: projects.length, color: 'var(--cyan)' },
+    { label: 'Active', value: projects.filter((p) => ['planning', 'design', 'testing', 'approved'].includes(p.status)).length, color: 'var(--green)' },
+    { label: 'Completed', value: projects.filter((p) => p.status === 'completed').length, color: 'var(--purple)' },
+  ];
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3, alignItems: 'center' }}>
-        <Typography variant="h5" sx={{ fontWeight: 600 }}>
-          Projects
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
+    <div style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 20, height: '100%', overflowY: 'auto' }}>
+      {/* Stats + button */}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', flexWrap: 'wrap' }}>
+        {stats.map((s) => (
+          <GlassCard key={s.label} style={{ flex: 1, minWidth: 120, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontSize: 28, fontWeight: 700, color: s.color, fontFamily: 'var(--mono)' }}><AnimCounter target={s.value} /></div>
+            <div style={{ fontSize: 12, color: 'var(--text2)' }}>{s.label}</div>
+          </GlassCard>
+        ))}
+        <button
           onClick={() => handleOpen()}
-        >
-          New Project
-        </Button>
-      </Box>
+          style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg, #50c8ff, #6b8fff)', border: 'none', borderRadius: 12, padding: '0 24px', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)', boxShadow: '0 4px 20px rgba(80,200,255,0.35)', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(80,200,255,0.5)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(80,200,255,0.35)'; }}
+        >＋ New Project</button>
+      </div>
 
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <ProjectIcon sx={{ fontSize: 40, color: '#2563eb', mr: 2 }} />
-                <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                    {stats.total}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total Projects
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <ProjectIcon sx={{ fontSize: 40, color: '#10b981', mr: 2 }} />
-                <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                    {stats.active}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Active Projects
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <ProjectIcon sx={{ fontSize: 40, color: '#f59e0b', mr: 2 }} />
-                <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                    {stats.completed}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Completed
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      {/* Project cards grid */}
+      {projects.length === 0 ? (
+        <GlassCard style={{ padding: 32, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No projects yet</GlassCard>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14 }}>
+          {projects.map((p, i) => (
+            <GlassCard key={p.projectId} style={{ padding: 22, animation: `fadeUp 0.35s ease ${i * 0.07}s both` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                <div style={{ minWidth: 0, flex: 1, marginRight: 10 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.projectName}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text3)' }}>{p.client?.companyName || 'No client'}</div>
+                </div>
+                <StatusBadge status={p.status} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '8px 12px' }}>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Budget</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--green)', fontFamily: 'var(--mono)' }}>
+                    {p.budget ? `$${parseFloat(p.budget).toLocaleString()}` : '—'}
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '8px 12px' }}>
+                  <div style={{ fontSize: 10, color: 'var(--text3)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Deadline</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', fontFamily: 'var(--mono)' }}>
+                    {p.endDate ? new Date(p.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                  </div>
+                </div>
+              </div>
+              {p.location && <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 12 }}>📍 {p.location}</div>}
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={() => handleOpen(p)} style={{ background: 'rgba(80,200,255,0.1)', border: '1px solid rgba(80,200,255,0.2)', borderRadius: 8, padding: '5px 12px', color: 'var(--cyan)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font)', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(80,200,255,0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(80,200,255,0.1)'}>Edit</button>
+                <button onClick={() => handleDelete(p.projectId)} style={{ background: 'rgba(220,80,80,0.1)', border: '1px solid rgba(220,80,80,0.2)', borderRadius: 8, padding: '5px 12px', color: 'var(--red)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font)', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(220,80,80,0.2)'} onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(220,80,80,0.1)'}>Delete</button>
+              </div>
+            </GlassCard>
+          ))}
+        </div>
+      )}
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Client</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Start Date</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>End Date</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Budget</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {projects.map((project) => (
-              <TableRow key={project.projectId}>
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {project.projectName}
-                  </Typography>
-                  {project.description && (
-                    <Typography variant="caption" color="text.secondary">
-                      {project.description.substring(0, 50)}...
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell>{project.client?.companyName || 'N/A'}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={project.status}
-                    size="small"
-                    sx={getStatusColor(project.status)}
-                  />
-                </TableCell>
-                <TableCell>
-                  {project.startDate
-                    ? new Date(project.startDate).toLocaleDateString()
-                    : 'N/A'}
-                </TableCell>
-                <TableCell>
-                  {project.endDate
-                    ? new Date(project.endDate).toLocaleDateString()
-                    : 'N/A'}
-                </TableCell>
-                <TableCell>
-                  {project.budget
-                    ? `$${parseFloat(project.budget).toLocaleString()}`
-                    : 'N/A'}
-                </TableCell>
-                <TableCell>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleOpen(project)}
-                  >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDelete(project.projectId)}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>
-          {editing ? 'Edit Project' : 'Create New Project'}
-        </DialogTitle>
+      {/* Dialog */}
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>{editing ? 'Edit Project' : 'Create New Project'}</DialogTitle>
         <DialogContent>
-          <TextField
-            fullWidth
-            margin="normal"
-            required
-            label="Project Name"
-            value={formData.projectName}
-            onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            select
-            label="Client"
-            value={formData.clientId}
-            onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-            SelectProps={{ native: true }}
-          >
+          <TextField fullWidth margin="normal" required label="Project Name" value={formData.projectName} onChange={(e) => setFormData({ ...formData, projectName: e.target.value })} />
+          <TextField fullWidth margin="normal" select label="Client" value={formData.clientId} onChange={(e) => setFormData({ ...formData, clientId: e.target.value })} SelectProps={{ native: true }}>
             <option value="">Select Client</option>
-            {clients.map((client) => (
-              <option key={client.clientId} value={client.clientId}>
-                {client.companyName}
-              </option>
-            ))}
+            {clients.map((c) => <option key={c.clientId} value={c.clientId}>{c.companyName}</option>)}
           </TextField>
-          <TextField
-            fullWidth
-            margin="normal"
-            select
-            label="Status"
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-            SelectProps={{ native: true }}
-          >
+          <TextField fullWidth margin="normal" select label="Status" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} SelectProps={{ native: true }}>
             <option value="planning">Planning</option>
             <option value="design">Design</option>
             <option value="testing">Testing</option>
@@ -354,57 +125,18 @@ function ProjectsPage() {
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </TextField>
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Start Date"
-            type="date"
-            value={formData.startDate}
-            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="End Date"
-            type="date"
-            value={formData.endDate}
-            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Budget"
-            type="number"
-            value={formData.budget}
-            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Location"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Description"
-            multiline
-            rows={3}
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          />
+          <TextField fullWidth margin="normal" label="Start Date" type="date" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} InputLabelProps={{ shrink: true }} />
+          <TextField fullWidth margin="normal" label="End Date" type="date" value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} InputLabelProps={{ shrink: true }} />
+          <TextField fullWidth margin="normal" label="Budget" type="number" value={formData.budget} onChange={(e) => setFormData({ ...formData, budget: e.target.value })} />
+          <TextField fullWidth margin="normal" label="Location" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
+          <TextField fullWidth margin="normal" label="Description" multiline rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 2 }}>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {editing ? 'Update' : 'Create'}
-          </Button>
+        <DialogActions sx={{ p: 3, pt: 2, gap: 1 }}>
+          <button onClick={() => setOpen(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 22px', color: 'var(--text2)', fontSize: 14, cursor: 'pointer', fontFamily: 'var(--font)' }}>Cancel</button>
+          <button onClick={handleSubmit} style={{ background: 'linear-gradient(135deg, #50c8ff, #6b8fff)', border: 'none', borderRadius: 10, padding: '10px 22px', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)', boxShadow: '0 4px 16px rgba(80,200,255,0.35)' }}>{editing ? 'Update' : 'Create'}</button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 }
 

@@ -261,25 +261,19 @@ Return ONLY the JSON, no other text.`;
       }
 
       // Генерируем позиции дронов, если их нет или недостаточно
-      const generateDronePositions = (count, existingPositions = []) => {
+      const generateDronePositions = (count) => {
         const positions = [];
         const spacing = 10;
         const rows = Math.ceil(Math.sqrt(count));
         
         for (let i = 0; i < count; i++) {
-          if (existingPositions[i]) {
-            // Используем существующую позицию
-            positions.push(existingPositions[i]);
-          } else {
-            // Генерируем новую позицию
-            const row = Math.floor(i / rows);
-            const col = i % rows;
-            positions.push({
-              startPosition: { x: col * spacing, y: 0, z: 10 + row * 5 },
-              endPosition: { x: col * spacing + 5, y: 5, z: 15 + row * 5 },
-              maxAltitude: 20 + row * 2
-            });
-          }
+          const row = Math.floor(i / rows);
+          const col = i % rows;
+          positions.push({
+            startPosition: { x: col * spacing, y: 0, z: 10 + row * 5 },
+            endPosition: { x: col * spacing + 5, y: 5, z: 15 + row * 5 },
+            maxAltitude: 20 + row * 2
+          });
         }
         return positions;
       };
@@ -293,65 +287,6 @@ Return ONLY the JSON, no other text.`;
           systemData: template.systemData
         };
       }
-
-      // Нормализуем координаты дронов к разумному диапазону для визуализации
-      const normalizePosition = (pos) => {
-        // Нормализуем координаты к диапазону: x: 0-20, y: 0-10, z: 0-20
-        // Это соответствует размеру gridHelper (20x20) в визуализации
-        const maxX = 20;
-        const maxY = 10;
-        const maxZ = 20;
-        
-        // Находим минимальные и максимальные значения для нормализации
-        let minX = Infinity, maxXVal = -Infinity;
-        let minY = Infinity, maxYVal = -Infinity;
-        let minZ = Infinity, maxZVal = -Infinity;
-        
-        // Сначала находим диапазон всех координат
-        if (pos.startPosition) {
-          minX = Math.min(minX, pos.startPosition.x || 0);
-          maxXVal = Math.max(maxXVal, pos.startPosition.x || 0);
-          minY = Math.min(minY, pos.startPosition.y || 0);
-          maxYVal = Math.max(maxYVal, pos.startPosition.y || 0);
-          minZ = Math.min(minZ, pos.startPosition.z || 0);
-          maxZVal = Math.max(maxZVal, pos.startPosition.z || 0);
-        }
-        if (pos.endPosition) {
-          minX = Math.min(minX, pos.endPosition.x || 0);
-          maxXVal = Math.max(maxXVal, pos.endPosition.x || 0);
-          minY = Math.min(minY, pos.endPosition.y || 0);
-          maxYVal = Math.max(maxYVal, pos.endPosition.y || 0);
-          minZ = Math.min(minZ, pos.endPosition.z || 0);
-          maxZVal = Math.max(maxZVal, pos.endPosition.z || 0);
-        }
-        
-        // Если значения уже в разумном диапазоне, не нормализуем
-        if (maxXVal <= maxX && maxYVal <= maxY && maxZVal <= maxZ && 
-            minX >= 0 && minY >= 0 && minZ >= 0) {
-          return pos;
-        }
-        
-        // Нормализуем координаты
-        const rangeX = maxXVal - minX || 1;
-        const rangeY = maxYVal - minY || 1;
-        const rangeZ = maxZVal - minZ || 1;
-        
-        const normalized = {
-          startPosition: pos.startPosition ? {
-            x: ((pos.startPosition.x || 0) - minX) / rangeX * maxX,
-            y: ((pos.startPosition.y || 0) - minY) / rangeY * maxY,
-            z: ((pos.startPosition.z || 0) - minZ) / rangeZ * maxZ
-          } : { x: 0, y: 0, z: 0 },
-          endPosition: pos.endPosition ? {
-            x: ((pos.endPosition.x || 0) - minX) / rangeX * maxX,
-            y: ((pos.endPosition.y || 0) - minY) / rangeY * maxY,
-            z: ((pos.endPosition.z || 0) - minZ) / rangeZ * maxZ
-          } : { x: 10, y: 5, z: 10 },
-          maxAltitude: pos.maxAltitude ? Math.min(pos.maxAltitude, maxY) : maxY
-        };
-        
-        return normalized;
-      };
 
       // Убеждаемся, что у каждой хореографии есть позиции дронов
       if (parsedResponse.systemData.choreographyIdeas) {
@@ -425,12 +360,10 @@ Return ONLY the JSON, no other text.`;
           }
           
           // Если позиций нет или их меньше чем нужно, генерируем
-          if (existingPositions.length < droneCount) {
-            idea.dronePositions = generateDronePositions(droneCount, existingPositions);
-          } else if (existingPositions.length > droneCount) {
-            // Если позиций больше чем нужно, обрезаем
-            idea.dronePositions = existingPositions.slice(0, droneCount);
+          if (existingPositions.length === 0) {
+            idea.dronePositions = generateDronePositions(droneCount);
           } else {
+            // existingPositions is normalized/padded/sliced above to match droneCount
             idea.dronePositions = existingPositions;
           }
           

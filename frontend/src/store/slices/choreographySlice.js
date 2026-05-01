@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import api from '../../services/api.js';
 
 export const fetchChoreographies = createAsyncThunk('choreographies/fetchAll', async (params = {}) => {
   console.log('🎭 [ChoreographySlice] Загружаю хореографии с параметрами:', params);

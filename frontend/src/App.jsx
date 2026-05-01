@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import DronesPage from './pages/DronesPage';
 import ShowsPage from './pages/ShowsPage';
 import ProjectsPage from './pages/ProjectsPage';
+import ClientsPage from './pages/ClientsPage';
 import TelemetryPage from './pages/TelemetryPage';
 import AlertsPage from './pages/AlertsPage';
 import ChoreographyEditorPage from './pages/ChoreographyEditorPage';
@@ -36,6 +37,7 @@ function App() {
           <Route path="drones" element={<DronesPage />} />
           <Route path="shows" element={<ShowsPage />} />
           <Route path="projects" element={<ProjectsPage />} />
+          <Route path="clients" element={<ClientsPage />} />
           <Route path="telemetry" element={<TelemetryPage />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="choreography/:id?" element={<ChoreographyEditorPage />} />

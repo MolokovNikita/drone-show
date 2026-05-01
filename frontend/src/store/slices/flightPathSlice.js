@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import api from '../../services/api.js';
 
 export const fetchFlightPaths = createAsyncThunk('flightPaths/fetchAll', async (params = {}) => {
   console.log('🛤️ [FlightPathSlice] Загружаю flight paths с параметрами:', params);

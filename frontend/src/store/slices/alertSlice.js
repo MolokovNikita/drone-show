@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import api from '../../services/api.js';
 
 export const fetchAlerts = createAsyncThunk('alerts/fetchAll', async (params = {}) => {
   const response = await api.get('/alerts', { params });
@@ -28,7 +28,7 @@ const alertSlice = createSlice({
         state.items = action.payload;
       })
       .addCase(acknowledgeAlert.fulfilled, (state, action) => {
-        const index = state.items.findIndex((a) => a.id === action.payload.id);
+        const index = state.items.findIndex((a) => a.alertId === action.payload.alertId);
         if (index !== -1) {
           state.items[index] = action.payload;
         }

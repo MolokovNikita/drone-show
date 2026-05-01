@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import api from '../../services/api.js';
 
 export const fetchDrones = createAsyncThunk('drones/fetchAll', async (params = {}) => {
   console.log('🚁 [DroneSlice] Загружаю дроны с параметрами:', params);

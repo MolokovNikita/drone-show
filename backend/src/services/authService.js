@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 const { User, Role } = require('../models');
 const config = require('../config/config');
 const logger = require('../utils/logger');
@@ -10,7 +11,7 @@ class AuthService {
 
     const existingUser = await User.findOne({ 
       where: { 
-        [require('sequelize').Op.or]: [{ email }, { username }]
+        [Op.or]: [{ email }, { username }]
       } 
     });
     if (existingUser) {
@@ -59,8 +60,14 @@ class AuthService {
   }
 
   async login(username, password) {
+    const loginValue = (username || '').trim();
     const user = await User.findOne({
-      where: { username },
+      where: {
+        [Op.or]: [
+          { username: loginValue },
+          { email: loginValue }
+        ]
+      },
       include: [{ model: Role, as: 'role' }]
     });
 

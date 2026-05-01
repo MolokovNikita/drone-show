@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import api from '../../services/api.js';
 
 export const fetchShows = createAsyncThunk('shows/fetchAll', async (params = {}) => {
   console.log('📺 [ShowSlice] Загружаю шоу с параметрами:', params);

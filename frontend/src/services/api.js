@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const baseURL =
+  (import.meta?.env && import.meta.env.VITE_API_URL) ||
+  (typeof process !== 'undefined' && process.env?.VITE_API_URL) ||
+  'http://localhost:3001/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -34,12 +39,23 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         const response = await axios.post(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/auth/refresh`,
+          `${baseURL}/auth/refresh`,
           { refreshToken }
         );
 
-        const { accessToken } = response.data.tokens;
+        // Backward-compatible parsing: support both { tokens } and flat token payload
+        const tokens = response.data.tokens || response.data;
+        const accessToken = tokens?.accessToken;
+        const nextRefreshToken = tokens?.refreshToken;
+
+        if (!accessToken) {
+          throw new Error('Refresh response does not contain access token');
+        }
+
         localStorage.setItem('accessToken', accessToken);
+        if (nextRefreshToken) {
+          localStorage.setItem('refreshToken', nextRefreshToken);
+        }
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);

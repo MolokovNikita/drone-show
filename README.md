@@ -166,6 +166,25 @@ cd frontend && npm run build
 cd backend && npm start
 ```
 
+## ✅ Unit-тестирование
+
+Тесты запускаются встроенным раннером Node.js (`node --test`) и не требуют поднятия БД/серверов.
+
+```bash
+# Все тесты (backend + frontend)
+npm test
+
+# Только backend
+npm run test:backend
+
+# Только frontend
+npm run test:frontend
+
+# Watch режим
+cd backend && npm run test:watch
+cd frontend && npm run test:watch
+```
+
 ## 📊 Дефолтные данные (Seeds)
 
 ### Базовые роли (`database/seed.sql`)

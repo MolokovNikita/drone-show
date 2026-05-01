@@ -130,6 +130,7 @@ class WebSocketService {
 
   disconnect() {
     this.shouldReconnect = false;
+    this.isConnecting = false;
     if (this.ws) {
       this.ws.close();
       this.ws = null;
